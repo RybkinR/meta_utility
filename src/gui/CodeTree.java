@@ -1,23 +1,22 @@
 package gui;
 
-import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Enumeration;
 
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
@@ -30,12 +29,13 @@ import basic_types.PyFunction;
 import code_porcessor.CodeManager;
 import code_porcessor.CodeProcessor;
 
-public class CodeTree extends JFrame {
-
-	/** 
-	* 
-	*/
+public class CodeTree{
+	
+	//final static String TEST_PATH = "C:\\Users\\Roman\\workspace\\Metaprogramming\\MetaData.py";
+	
 	private static final long serialVersionUID = 1L;
+	
+	JFrame frame = new JFrame("Meta utility");
 
 	DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Code structure");
 
@@ -43,48 +43,47 @@ public class CodeTree extends JFrame {
 
 	private JTree structTree = new JTree(model);
 
-	private JButton addButton = new JButton("Add function");
-	
-	private JButton addFolderButton = new JButton("Add class");
-	
-	private JButton delButton = new JButton("Delete entity");
-
 	JScrollPane scrollPaneStructure = new JScrollPane(structTree);
 
 	JPanel entitySpecificPane = new JPanel();
 	
-	JPanel actionPane = new JPanel();
-
 	void addEntity(PyEntity ent) {
 		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(ent);
 		newNode.setAllowsChildren(false);
-		rootNode.add(newNode);
-		structTree.updateUI();
+		this.rootNode.add(newNode);
 	}
 	
 	
 
 	public CodeTree(String path) {
+		model.setAsksAllowsChildren(true);
 		CodeManager cm = new CodeManager();
 		CodeProcessor.codeReader(path, cm);
 		
+		structTree.setRootVisible(true);
+		
 		for(PyEntity en: cm.getEntities()){
+			System.out.println(en.getName());
 			addEntity(en);
 		}
-		
-		model.setAsksAllowsChildren(true);
-		
+
 		JMenuBar menuBar = new JMenuBar();
         
-        JMenu genMenu = new JMenu("Generate code");
+        JMenuItem genMenu = new JMenuItem("Generate code");
         
         genMenu.addActionListener(new ActionListener() {           
             public void actionPerformed(ActionEvent e) {
-                CodeProcessor.codeWriter(cm, path);             
+            	String newPath = new String();
+        		JFileChooser fileopen = new JFileChooser();
+        		int ret = fileopen.showDialog(null, "Open file");                
+        		if (ret == JFileChooser.APPROVE_OPTION) {
+        			newPath = fileopen.getSelectedFile().getAbsolutePath();
+        		}
+                CodeProcessor.codeWriter(cm, newPath);             
             }           
         });
          
-        JMenu addClassMenu = new JMenu("Add class");
+        JMenuItem addClassMenu = new JMenuItem("Add class");
         
         addClassMenu.addActionListener(new ActionListener() {           
             public void actionPerformed(ActionEvent e) {
@@ -95,7 +94,7 @@ public class CodeTree extends JFrame {
             }           
         });
         
-        JMenu addFuncMenu = new JMenu("Add function");
+        JMenuItem addFuncMenu = new JMenuItem("Add function");
         
         addFuncMenu.addActionListener(new ActionListener() {           
             public void actionPerformed(ActionEvent e) {
@@ -106,7 +105,7 @@ public class CodeTree extends JFrame {
             }           
         });
         
-        JMenu delMenu = new JMenu("Delete selected");
+        JMenuItem delMenu = new JMenuItem("Delete selected");
         
         delMenu.addActionListener(new ActionListener() {           
             public void actionPerformed(ActionEvent e) {
@@ -114,7 +113,7 @@ public class CodeTree extends JFrame {
 				if (path == null)
 					return;
 				DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) path.getLastPathComponent();
-				removeNode(selectedNode);
+				removeNode(selectedNode, cm);
 				if (selectedNode != null && selectedNode.getUserObject() instanceof PyEntity) {
 					PyEntity pe = (PyEntity) selectedNode.getUserObject();
 					cm.deleteEntity(pe.getName());
@@ -122,6 +121,11 @@ public class CodeTree extends JFrame {
 				structTree.updateUI();
             }           
         });
+        
+        menuBar.add(genMenu);
+        menuBar.add(addClassMenu);
+        menuBar.add(addFuncMenu);
+        menuBar.add(delMenu);
         
 
 		structTree.addTreeSelectionListener(new TreeSelectionListener() {
@@ -131,15 +135,9 @@ public class CodeTree extends JFrame {
 					return;
 				DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) path.getLastPathComponent();
 				if (selectedNode != null && selectedNode.getUserObject() instanceof PyEntity) {
-					final PyEntity selectedEn = (PyEntity) selectedNode.getUserObject();
+					PyEntity selectedEn = (PyEntity) selectedNode.getUserObject();
 					entitySpecificPane.removeAll();
-					entitySpecificPane.setLayout(new BoxLayout(entitySpecificPane, BoxLayout.PAGE_AXIS));
-					entitySpecificPane.add(selectedEn.genSpecPane());
-					
-					actionPane.removeAll();
-					
-					JButton editButton = new JButton("Edit");
-					entitySpecificPane.add(editButton);
+					entitySpecificPane.add(selectedEn.genSpecPane(cm));
 				} else {
 					entitySpecificPane.removeAll();
 				}
@@ -147,35 +145,19 @@ public class CodeTree extends JFrame {
 			}
 		});
 
+		
 		structTree.setEditable(false);
-		
 
-		delButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				DefaultMutableTreeNode selNode = (DefaultMutableTreeNode) structTree.getLastSelectedPathComponent();
-				if (selNode.getUserObject() instanceof SportNutrition)
-					removeNode(selNode);
-			}
-		});
-		
-		setSize(1000, 700);
-		setVisible(true);
+		frame.setLayout(new GridLayout(1, 2));
+		frame.add(scrollPaneStructure);
+		frame.add(entitySpecificPane);
+		frame.setJMenuBar(menuBar);
+		frame.setSize(1000, 700);
+		frame.setVisible(true);
 	}
 
-	public DefaultMutableTreeNode searchNode(String nodeStr) {
-		DefaultMutableTreeNode node = null;
-		Enumeration e = rootNode.breadthFirstEnumeration();
-		while (e.hasMoreElements()) {
-			node = (DefaultMutableTreeNode) e.nextElement();
-			if (nodeStr.equalsIgnoreCase(node.getUserObject().toString())
-					&& node.getUserObject() instanceof SportNutrition) {
-				return node;
-			}
-		}
-		return null;
-	}
-
-	public void removeNode(DefaultMutableTreeNode selNode) {
+	
+	public void removeNode(DefaultMutableTreeNode selNode, CodeManager cm) {
 		if (selNode == null) {
 			return;
 		}
@@ -191,23 +173,9 @@ public class CodeTree extends JFrame {
 		TreePath path = new TreePath(nodes);
 		structTree.scrollPathToVisible(path);
 		structTree.setSelectionPath(path);
-		if (ContentSystem.listOfSN.remove(selNode.getUserObject())) {
-			System.out.println(selNode.getUserObject().toString() + "was removed");
-		}
+		PyEntity pe = (PyEntity) selNode.getUserObject();
+		cm.deleteEntity(pe.getName());
 		model.removeNodeFromParent(selNode);
-	}
-
-	public DefaultMutableTreeNode searchFolder(String folderName) {
-		DefaultMutableTreeNode node = null;
-		Enumeration e = rootNode.breadthFirstEnumeration();
-		while (e.hasMoreElements()) {
-			node = (DefaultMutableTreeNode) e.nextElement();
-			if (folderName.equalsIgnoreCase(node.getUserObject().toString())
-					&& node.getUserObject() instanceof String) {
-				return node;
-			}
-		}
-		return null;
 	}
 
 	private MutableTreeNode getSibling(DefaultMutableTreeNode selNode) {
@@ -217,5 +185,10 @@ public class CodeTree extends JFrame {
 		}
 		return sibling;
 	}
-
+	/*
+	public static void main(String[] args) {
+		
+		CodeTree ct = new CodeTree(TEST_PATH);
+	}
+*/
 }

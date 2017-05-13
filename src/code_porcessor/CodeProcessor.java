@@ -67,10 +67,20 @@ public class CodeProcessor {
 	}
 	
 	private static int processClass(ArrayList<String> code, PyClass cl, int n){
+		System.err.println("VITAL CHECK: " + code.get(n));
+		n++;
 		int offset = tabNum(code.get(n));
 		for(; n < code.size(); ){
 			String line = code.get(n);
-			if(offset != tabNum(line)) break;
+			if(line.equals("")){
+				n++;
+				continue;
+			}
+			System.err.println(line);
+			if(offset != tabNum(line)){
+				System.err.println("Offset check: " + line);
+				break;
+			}
 			
 			switch(lineType(line)){
 			case "field":
@@ -78,7 +88,9 @@ public class CodeProcessor {
 				break;
 			case "func":
 				PyFunction func = new PyFunction(getFuncName(line));
+				System.err.println("Check");
 				n = processFunction(code, func, n);
+				//System.err.println("VITAL CHECK: " + code.get(n));
 				cl.addFunc(func);
 				break;
 			}
@@ -86,20 +98,22 @@ public class CodeProcessor {
 			
 		}
 		
-		return n;
+		return ++n;
 	}
 	
 	private static int processFunction(ArrayList<String> code, PyFunction func, int n){
 		int offset = tabNum(code.get(n));
+		System.err.println(offset);
 		func.setParams(getParams(code.get(n)));
 		n++;
 		for(; n < code.size(); ){
 			String line = code.get(n);
+			System.err.println("Current: " + tabNum(line));
 			if(offset != tabNum(line)) break;
 			func.addData(line);
 			n++;
 		}
-		return n;
+		return ++n;
 	}
 		
 	
@@ -186,8 +200,9 @@ public class CodeProcessor {
 	
 	private static int tabNum(String line){
 		int n = 0;
+		
 		for(;n < line.length(); n++){
-			if(line.charAt(n) != '\t') break;
+			if(!Character.isSpace(line.charAt(n))) break;
 		}
 		
 		return n;

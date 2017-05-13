@@ -10,6 +10,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import code_porcessor.CodeManager;
+
 public class PyFunction extends PyEntity{
 	
 	private ArrayList<String> params;
@@ -59,7 +61,7 @@ public class PyFunction extends PyEntity{
 	public String pyCode(){
 		String result = new String();
 		
-		result += "#NOTICE: Generated code. Implementation check is vital \n" + "def " + this.getName() + "(";
+		result += "def " + this.getName() + "(";
 		
 		for(int i = 0; i < params.size(); i++){
 			if(i < params.size() - 1){
@@ -86,7 +88,7 @@ public class PyFunction extends PyEntity{
 		
 		String result = new String();
 		
-		result += tabs +  "#NOTICE: Generated code. Implementation check is vital \n" + tabs + "def " + this.getName() + "(";
+		result += tabs + "def " + this.getName() + "(";
 		
 		for(int i = 0; i < params.size(); i++){
 			if(i < params.size() - 1){
@@ -103,11 +105,70 @@ public class PyFunction extends PyEntity{
 		return result;
 	}
 
+	public JPanel genSpecPane(CodeManager cm) {
+		
+		JPanel res = new JPanel();
+		
+		res.setLayout(new GridLayout(2, 1));
+		JLabel info = new JLabel();
+		
+		info.setText(pyCode());
+		
+		
+		res.add(info);
+		
+		JPanel actionPane = new JPanel();
+		actionPane.setLayout(new GridLayout(3, 1));
+		JButton changeName = new JButton("Change name");
+		JButton addParam = new JButton("Add param");
+		JButton deleteParam = new JButton("Delete param");
+		
+		changeName.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				String prevName = getName();
+				String name = JOptionPane.showInputDialog("Enter new name");
+				cm.getFunction(prevName).setName(name);
+				setName(name);
+            	info.setText(pyCode());
+            	res.updateUI();
+			}
+		});
+		
+		addParam.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				String param = JOptionPane.showInputDialog("Enter parameter name");
+				cm.getFunction(getName()).addParam(param);
+				addParam(param);
+            	info.setText(pyCode());
+            	res.updateUI();
+			}
+		});
+		
+		deleteParam.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				String name = JOptionPane.showInputDialog("Enter parameter name");
+				cm.getFunction(getName()).deleteParam(name);
+				deleteParam(name);
+            	info.setText(pyCode());
+            	res.updateUI();
+			}
+		});
+		
+		actionPane.add(changeName);
+		actionPane.add(addParam);
+		actionPane.add(deleteParam);
+		res.add(actionPane);
+		return res;
+	}
+	
 	public JPanel genSpecPane() {
 		
 		JPanel res = new JPanel();
 		
-		res.setLayout(new GridLayout(1, 2));
+		res.setLayout(new GridLayout(2, 1));
 		JLabel info = new JLabel();
 		
 		info.setText(pyCode());
@@ -157,6 +218,5 @@ public class PyFunction extends PyEntity{
 		res.add(actionPane);
 		return res;
 	}
-	
 	
 }

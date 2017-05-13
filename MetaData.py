@@ -12,6 +12,7 @@ class MetaData:
     def set_funcs(self, *f):
         self.funcs = f
 
+
     def add_func(self, name, attr):
         self.funcs[name] = attr
 

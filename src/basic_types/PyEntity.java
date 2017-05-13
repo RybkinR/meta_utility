@@ -2,6 +2,8 @@ package basic_types;
 
 import javax.swing.JPanel;
 
+import code_porcessor.CodeManager;
+
 public abstract class PyEntity {
 	private String name;
 	//obsolete
@@ -29,5 +31,12 @@ public abstract class PyEntity {
 		return enSpecificPane;
 	}
 	
-	public abstract JPanel genSpecPane();
+	public abstract JPanel genSpecPane(CodeManager cm);
+
+	@Override
+	public String toString() {
+		return getType() + " " + name;
+	}
+	
+	
 }

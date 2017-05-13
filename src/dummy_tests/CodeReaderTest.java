@@ -8,7 +8,7 @@ public class CodeReaderTest {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		CodeManager cm = new CodeManager();
-		CodeProcessor.codeReader("C:\\Users\\Roman\\workspace\\Meta utility\\MetaData.py", cm);
+		CodeProcessor.codeReader("C:\\Users\\Roman\\workspace\\Metaprogramming\\MetaData.py", cm);
 	}
 
 }

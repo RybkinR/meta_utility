@@ -10,9 +10,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTree;
@@ -21,6 +19,8 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+
+import code_porcessor.CodeManager;
 
 public class PyClass extends PyEntity {
 	
@@ -44,6 +44,10 @@ public class PyClass extends PyEntity {
 	public void addField(String name, String val){
 		fields.put(name, val);
 	}
+	
+	public void delField(String name){
+		if(fields.containsKey(name)) fields.remove(name);
+	}
 
 	public ArrayList<PyFunction> getFuncs() {
 		return funcs;
@@ -55,6 +59,10 @@ public class PyClass extends PyEntity {
 	
 	public void addFunc(PyFunction f){
 		funcs.add(f);
+	}
+	
+	public void delFunc(PyFunction f){
+		if(funcs.contains(f)) funcs.remove(f);
 	}
 	
 	public String getType(){
@@ -80,10 +88,10 @@ public class PyClass extends PyEntity {
 	}
 
 	@Override
-	public JPanel genSpecPane() {
+	public JPanel genSpecPane(CodeManager cm) {
 		JPanel res = new JPanel();
 		
-		res.setLayout(new GridLayout(1, 2));
+		res.setLayout(new GridLayout(2, 1));
 		
 		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(this.getName());
 
@@ -106,8 +114,11 @@ public class PyClass extends PyEntity {
 	    changeName.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				String prevName = getName();
 				String name = JOptionPane.showInputDialog("Enter new name");
+            	cm.getClass(prevName).setName(name);
             	setName(name);
+            	rootNode.setUserObject(name);
             	loadTree(rootNode, structTree);
             	res.updateUI();
 			}
@@ -117,7 +128,9 @@ public class PyClass extends PyEntity {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				String name = JOptionPane.showInputDialog("Enter function name");
-            	setName(name);
+            	PyFunction f = new PyFunction(name);
+            	cm.getClass(getName()).addFunc(f);
+            	addFunc(f);
             	loadTree(rootNode, structTree);
             	res.updateUI();
 			}
@@ -128,6 +141,7 @@ public class PyClass extends PyEntity {
 			public void actionPerformed(ActionEvent arg0) {
 				String input = JOptionPane.showInputDialog("Enter field name and value (<name>=<value>)");
 				if(isField(input)){
+					cm.getClass(getName()).addField(input.split("=")[0], input.split("=")[1]);
 					addField(input.split("=")[0], input.split("=")[1]);
 				}
             	loadTree(rootNode, structTree);
@@ -138,16 +152,31 @@ public class PyClass extends PyEntity {
 	    delButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				
+				TreePath path = structTree.getSelectionPath();
+				if (path == null)
+					return;
+				DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) path.getLastPathComponent();
+				if (selectedNode != null && selectedNode.getUserObject() instanceof PyFunction) {
+					PyFunction pe = (PyFunction) selectedNode.getUserObject();
+					cm.getClass(getName()).delFunc(pe);
+					delFunc(pe);
+					
+				}
+				else if(selectedNode != null && selectedNode.getUserObject() instanceof String){
+					String s = (String)  selectedNode.getUserObject();
+					cm.getClass(getName()).delField(s.split("=")[0]);
+					delField(s.split("=")[0]);
+				}
             	loadTree(rootNode, structTree);
             	res.updateUI();
 			}
 		});
-	    
+	    actionPane.setLayout(new GridLayout(4,1));
 	    actionPane.add(changeName);
 	    actionPane.add(addFunction);
 	    actionPane.add(addField);
 	    actionPane.add(delButton);
+	    
 	    JPanel entityPane = new JPanel();
 	    
 	    
@@ -158,12 +187,10 @@ public class PyClass extends PyEntity {
 					return;
 				DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) path.getLastPathComponent();
 				if (selectedNode != null && selectedNode.getUserObject() instanceof PyFunction) {
-					final PyEntity selectedEn = (PyEntity) selectedNode.getUserObject();
+					final PyFunction selectedEn = (PyFunction) selectedNode.getUserObject();
 					entityPane.removeAll();
 					entityPane.add(selectedEn.genSpecPane());
-				}
-				else if(selectedNode != null && selectedNode.getUserObject() instanceof String){
-					
+					entityPane.updateUI();
 				}
 				else{
 					entityPane.removeAll();
@@ -172,25 +199,30 @@ public class PyClass extends PyEntity {
 			}
 		});
 
-	    
+	    classPane.add(actionPane);
 	    structTree.setEditable(false);
+	    
+	    res.add(classPane);
+	    res.add(entityPane);
 	    
 		return res;
 	}
 	
 	private void loadTree(DefaultMutableTreeNode rootNode, JTree structTree){
+		rootNode.removeAllChildren();
 		Iterator it = fields.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry pair = (Map.Entry)it.next();
 	        
-	        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(pair.getKey() + " = " + pair.getValue());
+	        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(pair.getKey() + "=" + pair.getValue());
 			newNode.setAllowsChildren(false);
 			rootNode.add(newNode);
 			structTree.updateUI();
 	    }
 	    
 	    for(PyFunction f: funcs){
-	    	DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f.getName());
+	    	System.out.println(f.getData());
+	    	DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f);
 			newNode.setAllowsChildren(false);
 			rootNode.add(newNode);
 			structTree.updateUI();
